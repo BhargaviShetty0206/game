@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emoji Catcher Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      background-color: #f0f8ff;
+    }
+    #gameArea {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, #a3d8f4, #74b9ff);
+    }
+    #basket {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      width: 80px;
+      height: 30px;
+      background-color: #ff8c00;
+      border-radius: 15px;
+      transform: translateX(-50%);
+    }
+    .emoji {
+      position: absolute;
+      font-size: 30px;
+      animation: fall 3s linear infinite;
+    }
+    @keyframes fall {
+      from {
+        top: -50px;
+      }
+      to {
+        top: 100vh;
+      }
+    }
+    #score, #timer {
+      position: absolute;
+      top: 10px;
+      font-size: 20px;
+      color: #fff;
+    }
+    #score {
+      left: 10px;
+    }
+    #timer {
+      right: 10px;
+    }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 30px;
+      color: #ff0000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div id="basket"></div>
+    <div id="score">Score: 0</div>
+    <div id="timer">Time: 60s</div>
+    <div id="gameOver">Game Over! Final Score: <span id="finalScore"></span></div>
+  </div>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const basket = document.getElementById("basket");
+    const scoreDisplay = document.getElementById("score");
+    const timerDisplay = document.getElementById("timer");
+    const gameOverDisplay = document.getElementById("gameOver");
+    const finalScoreDisplay = document.getElementById("finalScore");
+
+    let score = 0;
+    let basketPosition = gameArea.offsetWidth / 2 - basket.offsetWidth / 2;
+    let gameActive = true;
+    let timeRemaining = 60; // 60 seconds
+
+    // Move basket left or right with arrow keys
+    document.addEventListener("keydown", (event) => {
+      if (!gameActive) return; // Disable controls if the game is over
+      const key = event.key;
+      const step = 20;
+      if (key === "ArrowLeft" && basketPosition > 0) {
+        basketPosition -= step;
+      } else if (key === "ArrowRight" && basketPosition < gameArea.offsetWidth - basket.offsetWidth) {
+        basketPosition += step;
+      }
+      basket.style.left = `${basketPosition}px`;
+    });
+
+    // Create falling emojis
+    function createEmoji() {
+      if (!gameActive) return; // Stop creating emojis when the game is over
+
+      const emoji = document.createElement("div");
+      emoji.classList.add("emoji");
+      emoji.textContent = "🍎"; // Change emoji here
+      emoji.style.left = `${Math.random() * (gameArea.offsetWidth - 30)}px`;
+      gameArea.appendChild(emoji);
+
+      // Animate the emoji falling
+      const fallDuration = Math.random() * 2 + 3; // Random duration
+      emoji.style.animationDuration = `${fallDuration}s`;
+
+      // Check for collision or out of bounds
+      const fallInterval = setInterval(() => {
+        const emojiRect = emoji.getBoundingClientRect();
+        const basketRect = basket.getBoundingClientRect();
+
+        if (
+          emojiRect.bottom >= basketRect.top &&
+          emojiRect.left < basketRect.right &&
+          emojiRect.right > basketRect.left
+        ) {
+          // Emoji caught
+          score++;
+          scoreDisplay.textContent = `Score: ${score}`;
+          emoji.remove();
+          clearInterval(fallInterval);
+        } else if (emojiRect.top > gameArea.offsetHeight) {
+          // Emoji missed
+          emoji.remove();
+          clearInterval(fallInterval);
+        }
+      }, 20);
+
+      // Remove emoji when out of bounds
+      setTimeout(() => {
+        if (gameArea.contains(emoji)) {
+          gameArea.removeChild(emoji);
+        }
+      }, fallDuration * 1000);
+    }
+
+    // Generate emojis at intervals
+    const emojiInterval = setInterval(createEmoji, 1000); // New emoji every second
+
+    // Timer countdown
+    const timerInterval = setInterval(() => {
+      if (timeRemaining > 0) {
+        timeRemaining--;
+        timerDisplay.textContent = `Time: ${timeRemaining}s`;
+      } else {
+        // Game over
+        clearInterval(timerInterval);
+        clearInterval(emojiInterval);
+        gameActive = false;
+        gameOverDisplay.style.display = "block";
+        finalScoreDisplay.textContent = score;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
